@@ -36,6 +36,7 @@ Module CATgetFeatures
         Dim i, j As Integer
         Dim PartBody As MECMOD.Body
         Dim PartName, Fname As String
+        Dim Fnames() As String
         'Dim sel As INFITF.Selection
         Act.Cells(1, 1) = "Category"
         Act.Cells(1, 2) = "CATIA File Name"
@@ -63,6 +64,18 @@ Module CATgetFeatures
                     Act.Cells(i, 5) = "V"
                 ElseIf Left(Fname, 6) = "Flange" Then
                     Act.Cells(i, 4) = "V"
+                Else
+                    For m = 4 To Act.Cells.Columns.Count
+
+                        Fnames = Split(Fname, ".")
+                        If Fnames(0) = Act.Cells(1, m) Then
+                            GoTo checkfeaturename
+                        End If
+                        Act.Cells(1, Act.UsedRange.Columns.Count + 1) = Fnames(0)
+checkfeaturename:
+                        Act.Cells(i, m) = "V"
+                    Next
+
                 End If
 
                 'Call ExportToExcel(i + 2, j, PartName, Fname)
@@ -83,21 +96,19 @@ Module CATgetFeatures
             CheckSM = False
             CheckSH = False
             CheckSF = False
-            Column = 4
-            Do Until Act.Cells(Row, Column).text = ""
-                If Left(Act.Cells(Row, Column).text, 14) = "Circular Stamp" Then
+            For j = 4 To 6
+                If Act.Cells(i, 6) = "V" Then
                     CheckSH = True
                     Act.Cells(Row, 1) = "SH"
-                ElseIf Left(Act.Cells(Row, Column).text, 15) = "Surfacic Flange" Then
+                ElseIf Act.Cells(i, 5) = "V" Then
                     CheckSF = True
                     Act.Cells(Row, 1) = "Please Check Surfacic Features!!"
-                ElseIf Left(Act.Cells(Row, Column).text, 6) = "Flange" Then
+                ElseIf Act.Cells(i, 4) = "V" Then
                     CheckSB = True
                 Else
                     CheckSM = True
                 End If
-                Column = Column + 1
-            Loop
+            Next
             If CheckSM = True And CheckSH = False And CheckSB = False And CheckSF = False Then
                 Act.Cells(Row, 1) = "SM"
             ElseIf CheckSM = True And CheckSH = False And CheckSB = True And CheckSF = False Then
