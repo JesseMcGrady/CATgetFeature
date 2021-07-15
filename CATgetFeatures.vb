@@ -33,7 +33,7 @@ Module CATgetFeatures
         CATIAFactory = Nothing
     End Sub
     Private Sub GetMultifileFeatures()
-        Dim i, j As Integer
+        Dim i, j, m As Integer
         Dim PartBody As MECMOD.Body
         Dim PartName, Fname As String
         Dim Fnames() As String
@@ -59,23 +59,25 @@ Module CATgetFeatures
                 'Console.WriteLine(PartBody.Shapes.Item(j).Name)
                 Fname = PartBody.Shapes.Item(j).Name
                 If Left(Fname, 14) = "Circular Stamp" Then
-                    Act.Cells(i, 6) = "V"
+                    Act.Cells(i + 2, 6) = "V"
                 ElseIf Left(Fname, 15) = "Surfacic Flange" Then
-                    Act.Cells(i, 5) = "V"
+                    Act.Cells(i + 2, 5) = "V"
                 ElseIf Left(Fname, 6) = "Flange" Then
-                    Act.Cells(i, 4) = "V"
+                    Act.Cells(i + 2, 4) = "V"
                 Else
-                    For m = 4 To Act.Cells.Columns.Count
+
+                    For m = 4 To Act.UsedRange.Columns.Count
 
                         Fnames = Split(Fname, ".")
-                        If Fnames(0) = Act.Cells(1, m) Then
-                            GoTo checkfeaturename
+                        If Act.Cells(1, m).Value = Fnames(0) Then
+                            Act.Cells(i + 2, m) = "V"
+                            Exit For
                         End If
-                        Act.Cells(1, Act.UsedRange.Columns.Count + 1) = Fnames(0)
-checkfeaturename:
-                        Act.Cells(i, m) = "V"
                     Next
-
+                    If m = Act.UsedRange.Columns.Count + 1 Then
+                        Act.Cells(1, m) = Fnames(0)
+                        Act.Cells(i + 2, m) = "V"
+                    End If
                 End If
 
                 'Call ExportToExcel(i + 2, j, PartName, Fname)
@@ -97,13 +99,13 @@ checkfeaturename:
             CheckSH = False
             CheckSF = False
             For j = 4 To 6
-                If Act.Cells(i, 6) = "V" Then
+                If Act.Cells(Row, j).Value = "V" Then
                     CheckSH = True
                     Act.Cells(Row, 1) = "SH"
-                ElseIf Act.Cells(i, 5) = "V" Then
+                ElseIf Act.Cells(Row, j).Value = "V" Then
                     CheckSF = True
                     Act.Cells(Row, 1) = "Please Check Surfacic Features!!"
-                ElseIf Act.Cells(i, 4) = "V" Then
+                ElseIf Act.Cells(Row, j).Value = "V" Then
                     CheckSB = True
                 Else
                     CheckSM = True
