@@ -20,7 +20,7 @@ Module CATgetFeatures
         Files_Catia = IO.Directory.GetFiles(FilesPath, "*.CATPart")
         Call GetMultifileFeatures()
         Console.WriteLine("Finish")
-        Call CompareParts()
+        'Call CompareParts()
         Act.UsedRange.EntireColumn.AutoFit()
         Act.SaveAs(fileName)
         Wb.Close()
@@ -37,6 +37,9 @@ Module CATgetFeatures
         Dim PartBody As MECMOD.Body
         Dim PartName, Fname As String
         Dim Fnames() As String
+        Dim Feautures_Part() As String
+        Dim oSelection As INFITF.Selection
+        Dim SearchCount, SurFlangeCount, FlangeCount, CirStampCount As Integer
         'Dim sel As INFITF.Selection
         Act.Cells(1, 1) = "Category"
         Act.Cells(1, 2) = "CATIA File Name"
@@ -44,20 +47,45 @@ Module CATgetFeatures
         Act.Cells(1, 4) = "Flange"
         Act.Cells(1, 5) = "Surfacic Flange"
         Act.Cells(1, 6) = "Circular Stamp"
-
+        ReDim Feautures_Part(0)
         For i = 0 To UBound(Files_Catia)
             oPartDoc = CATIAFactory.MyCATIA.Documents.Open(Files_Catia(i))
             PartName = oPartDoc.Name
+            Console.WriteLine(PartName)
             Act.Cells(i + 2, 2) = PartName
             'Console.WriteLine(oPartDoc.Name)
             oPartDoc.Activate()
             oPart = oPartDoc.Part
+            oSelection = oPartDoc.Selection
+            oSelection.Search("Name=Surfacic Flange* & (((FreeStyle.'PartDesign Feature' + 'Part Design'.'PartDesign Feature') + 'Generative Shape Design'.'PartDesign Feature')),all")
+            Console.WriteLine("Surfacic Flange Count : ")
+            SurFlangeCount = Int(oSelection.Count)
+            Console.WriteLine(SurFlangeCount)
+            oSelection.Clear()
+            oSelection.Search("Name=Flange* & (((FreeStyle.'PartDesign Feature' + 'Part Design'.'PartDesign Feature') + 'Generative Shape Design'.'PartDesign Feature')),all")
+            Console.WriteLine("Flange Count : ")
+            FlangeCount = Int(oSelection.Count)
+            Console.WriteLine(FlangeCount)
+            oSelection.Clear()
+            oSelection.Search("Name=Circular Stamp* & (((FreeStyle.'PartDesign Feature' + 'Part Design'.'PartDesign Feature') + 'Generative Shape Design'.'PartDesign Feature')),all")
+            Console.WriteLine("Circular Stamp Count : ")
+            CirStampCount = Int(oSelection.Count)
+            Console.WriteLine(CirStampCount)
+            oSelection.Clear()
+            oSelection.Search("Name=Joggle* & (((FreeStyle.'PartDesign Feature' + 'Part Design'.'PartDesign Feature') + 'Generative Shape Design'.'PartDesign Feature')),all")
+            'Console.WriteLine("Joggle Count : ")
+            SearchCount = Int(oSelection.Count)
+            oSelection.Clear()
+            'Console.WriteLine(SearchCount)
+            oSelection = Nothing
             'Console.WriteLine(oPart.Bodies.Count)
             PartBody = oPart.MainBody
             Act.Cells(i + 2, 3) = GetMaterial(oPart)
             For j = 1 To PartBody.Shapes.Count
                 'Console.WriteLine(PartBody.Shapes.Item(j).Name)
                 Fname = PartBody.Shapes.Item(j).Name
+                ReDim Preserve Feautures_Part(UBound(Feautures_Part) + 1)
+                Feautures_Part(UBound(Feautures_Part)) = Fname
                 If Left(Fname, 14) = "Circular Stamp" Then
                     Act.Cells(i + 2, 6) = "V"
                 ElseIf Left(Fname, 15) = "Surfacic Flange" Then
@@ -80,11 +108,44 @@ Module CATgetFeatures
                     End If
                 End If
 
+                '增加Joggle特徵判別
+
                 'Call ExportToExcel(i + 2, j, PartName, Fname)
             Next
+            If SurFlangeCount > 0 Then
+                If CheckSheetMetal(Feautures_Part, SearchCount) = True And SearchCount <> 0 Then
+                    Act.Cells(i + 2, 1) = "SH"
+                Else
+                    Act.Cells(i + 2, 1) = "SB"
+                End If
+            ElseIf CirStampCount > 0 Then
+                Act.Cells(i + 2, 1) = "SH"
+            Else
+                If FlangeCount > 0 Then
+                    Act.Cells(i + 2, 1) = "SB"
+                ElseIf CirStampCount = 0 And FlangeCount = 0 Then
+                    Act.Cells(i + 2, 1) = "SM"
+                End If
+            End If
+
             oPartDoc.Close()
         Next
     End Sub
+    Private Function CheckSheetMetal(ByRef Feature_Array() As String, ByRef JoggleCount As Integer) As Boolean
+        Dim FirstlayerCount As Integer
+        FirstlayerCount = 0
+        For i = 1 To UBound(Feature_Array)
+            If Left(Feature_Array(i), 6) = "Joggle" Then
+                FirstlayerCount = FirstlayerCount + 1
+            End If
+        Next
+        Console.WriteLine(FirstlayerCount)
+        If FirstlayerCount = JoggleCount Then
+            CheckSheetMetal = False
+        Else
+            CheckSheetMetal = True
+        End If
+    End Function
     Private Sub ExportToExcel(Rows As Integer, Columns As Integer, DocName As String, FeaturesName As String)
 
         Act.Cells(Rows, Columns + 3) = FeaturesName
@@ -93,7 +154,7 @@ Module CATgetFeatures
     Private Sub CompareParts()      '在Excel分辨鈑金件種類
         Dim Row, Column As Integer
         Dim CheckSM, CheckSB, CheckSH, CheckSF As Boolean
-        For Row = 1 To Act.UsedRange.Rows.Count
+        For Row = 2 To Act.UsedRange.Rows.Count
             CheckSB = False
             CheckSM = False
             CheckSH = False
@@ -104,7 +165,7 @@ Module CATgetFeatures
                     Act.Cells(Row, 1) = "SH"
                 ElseIf Act.Cells(Row, j).Value = "V" Then
                     CheckSF = True
-                    Act.Cells(Row, 1) = "Please Check Surfacic Features!!"
+                    'Act.Cells(Row, 1) = "Please Check Surfacic Features!!"
                 ElseIf Act.Cells(Row, j).Value = "V" Then
                     CheckSB = True
                 Else

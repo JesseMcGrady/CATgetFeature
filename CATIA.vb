@@ -119,16 +119,16 @@ Public Class CATIA_Property
         XCATIA.MyCATIA.Visible = True
         XCATIA.MyCATIA.DisplayFileAlerts = True
         Try
-            With XCATIA
-                Try
-                    .PartDocument = XCATIA.MyCATIA.ActiveDocument
-                    .Selection = .PartDocument.Selection
-                Catch ex As Exception
-                    .ProductDocument = XCATIA.MyCATIA.ActiveDocument
-                    .Selection = .ProductDocument.Selection
-                End Try
-                .Documents = XCATIA.MyCATIA.Documents
-            End With
+            'With XCATIA
+            '    Try
+            '        .PartDocument = XCATIA.MyCATIA.ActiveDocument
+            '        .Selection = .PartDocument.Selection
+            '    Catch ex As Exception
+            '        .ProductDocument = XCATIA.MyCATIA.ActiveDocument
+            '        .Selection = .ProductDocument.Selection
+            '    End Try
+            '    .Documents = XCATIA.MyCATIA.Documents
+            'End With
             Return XCATIA
         Catch ex As Exception
             Console.WriteLine("Didn't open CATIA File")
@@ -143,7 +143,7 @@ Public Class CATIA_Property
         Try
             XCATIA.MyCATIA = System.Activator.CreateInstance(System.Type.GetTypeFromProgID("Catia.Application"))
         Catch
-            System.Diagnostics.Process.Start("D:\Work\VB.NET\ActiveCATIA.bat", vbNormalNoFocus)
+            System.Diagnostics.Process.Start(System.AppDomain.CurrentDomain.BaseDirectory & "\ActiveCATIA.bat", vbNormalNoFocus)
             XCATIA.MyCATIA = System.Activator.CreateInstance(System.Type.GetTypeFromProgID("Catia.Application"))
         End Try
 
